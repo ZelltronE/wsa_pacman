@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 
 extension FutureOrUtils<T> on FutureOr<T> {
   Future<R> thenOr<R>(FutureOr<R> Function(T value) onValue) {

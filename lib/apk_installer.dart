@@ -10,7 +10,6 @@ import 'package:wsa_pacman/global_state.dart';
 import 'package:wsa_pacman/main.dart';
 import 'package:wsa_pacman/utils/wsa_utils.dart';
 import 'package:wsa_pacman/widget/smooth_list_view.dart';
-import 'package:wsa_pacman/widget/themed_pane_item.dart';
 import 'package:wsa_pacman/windows/win_io.dart';
 import 'package:wsa_pacman/widget/adaptive_icon.dart';
 import 'package:wsa_pacman/widget/flexible_info_bar.dart';
@@ -133,8 +132,8 @@ class _ApkInstallerState extends State<ApkInstaller> {
               const SizedBox(height: 10),
               Text(lang.installer_message),
               const SizedBox(height: 10),
-              Text((oldVersion.isNotEmpty ? lang.installer_info_version_change(oldVersion, version) : lang.installer_info_version(version)).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.disabledColor), overflow: TextOverflow.ellipsis, maxLines: 1),
-              Text(lang.installer_info_package(package).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.disabledColor), overflow: TextOverflow.ellipsis, maxLines: 1),
+              Text((oldVersion.isNotEmpty ? lang.installer_info_version_change(oldVersion, version) : lang.installer_info_version(version)).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.resources.textFillColorDisabled), overflow: TextOverflow.ellipsis, maxLines: 1),
+              Text(lang.installer_info_package(package).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.resources.textFillColorDisabled), overflow: TextOverflow.ellipsis, maxLines: 1),
               /*SmoothListView(
                 padding: EdgeInsets.only(
                   bottom: kPageDefaultVerticalPadding,
@@ -158,16 +157,10 @@ class _ApkInstallerState extends State<ApkInstaller> {
             children: [
               for (var permission in GState.permissions.of(context)) Container(
                 padding: EdgeInsets.only(right: isLtr ? 10 : 0, left: isLtr ? 0 : 10),
-                child: ThemablePaneItem(
+                child: ListTile(
+                  leading: permission.icon,
                   title: Text(permission.description(lang)),
-                  icon: permission.icon,
-                  translucent: mica.enabled
-                ).build(
-                  context,
-                  false,
-                  (){1;},
-                  displayMode: PaneDisplayMode.open,
-                )
+                ),
               )
             ],
           )))),

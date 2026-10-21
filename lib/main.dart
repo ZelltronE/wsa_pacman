@@ -5,7 +5,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart' as material;
-import 'package:mdi/mdi.dart';
+import 'package:wsa_pacman/widget/mdi.dart';
 import 'package:flutter_localizations/flutter_localizations.dart' as locale;
 import 'package:wsa_pacman/android/android_utils.dart';
 import 'package:wsa_pacman/apk_installer.dart';
@@ -17,7 +17,6 @@ import 'package:wsa_pacman/io/isolate_runner.dart';
 import 'package:wsa_pacman/utils/misc_utils.dart';
 import 'package:wsa_pacman/utils/wsa_utils.dart';
 import 'package:wsa_pacman/utils/locale_utils.dart';
-import 'package:wsa_pacman/widget/themed_pane_item.dart';
 import 'package:wsa_pacman/windows/win_info.dart';
 import 'package:wsa_pacman/windows/win_reg.dart';
 import 'package:wsa_pacman/windows/wsa_status.dart';
@@ -214,7 +213,7 @@ void main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
   const app = MyApp();
   final wrappedApp = SharedValue.wrapApp(app);
-  darkMode = SystemTheme.isDarkMode;
+  darkMode = PlatformDispatcher.instance.platformBrightness == Brightness.dark;
   runApp(wrappedApp);
 
   AppOptions.init();
@@ -254,15 +253,6 @@ void main(List<String> arguments) async {
   }
 }
 
-class _FluentLocalizationsEnglish extends LocalizationsDelegate<FluentLocalizations> {
-  const _FluentLocalizationsEnglish();
-
-  @override bool isSupported(Locale locale) => true;
-  @override bool shouldReload(_FluentLocalizationsEnglish old) => false;
-  @override Future<FluentLocalizations> load(Locale locale) => DefaultFluentLocalizations.load(locale);
-  @override String toString() => 'DefaultFluentLocalizations.delegate(en_US)';
-}
-
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
@@ -296,50 +286,19 @@ class MyApp extends StatelessWidget {
             locale.GlobalMaterialLocalizations.delegate,
             WidgetLocalizationOverrides.delegate,
             //locale.GlobalCupertinoLocalizations.delegate,
-            _FluentLocalizationsEnglish(),
+            FluentLocalizations.delegate,
           ],
           supportedLocales: LocaleUtils.supportedLocales,
           localeResolutionCallback: LocaleUtils.localeResolutionCallback,
           routes: {'/': (_) => Constants.installMode ? const ApkInstaller() : const MyHomePage()},
-          theme: ThemeData(
-            buttonTheme: ButtonThemeData(
-              defaultButtonStyle: ButtonStyle(
-                shadowColor: ButtonState.all(Colors.transparent),
-                border: ButtonState.resolveWith((states) {
-                  if (isDark) {
-                    if (states.isDisabled) return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0xf0f0f0, 0.05));
-                    if (states.isNone || (states.isHovering && !states.isPressing)) return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0xf0f0f0, 0.035));
-                    else return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0xf0f0f0, 0.07));
-                  }
-                  else {
-                    if (states.isDisabled) return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0x212121, 0.12));
-                    if (states.isNone || (states.isHovering && !states.isDisabled && !states.isPressing)) return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0x212121, 0.22));
-                    else return const BorderSide(width: 0.5, color: ColorConst.withOpacity(0x212121, 0.07));
-                  }
-                }),
-                backgroundColor: ButtonState.resolveWith((states) {
-                  if (isDark) {
-                    if (states.isDisabled) return const ColorConst.withOpacity(0xFFFFFF, 0.045);
-                    if (states.isPressing) return const ColorConst.withOpacity(0xFFFFFF, 0.03);
-                    if (states.isHovering) return const ColorConst.withOpacity(0xFFFFFF, 0.08);
-                    return const ColorConst.withOpacity(0xFFFFFF, 0.055);
-                  }
-                  else {
-                    if (states.isDisabled) return const ColorConst.withOpacity(0xf9f9f9, 0.045);
-                    if (states.isPressing) return const ColorConst.withOpacity(0xf0f0f0, 0.4);
-                    if (states.isHovering) return const ColorConst.withOpacity(0xf9f9f9, 0.65);
-                    return const ColorConst.withOpacity(0xFFFFFF, 0.8);
-                  }
-                })
-              ) ,
-            ),
+          theme: FluentThemeData(
             scaffoldBackgroundColor: IsFullMicaOrInstall ? Colors.transparent : isDark ? const Color(0xFF272727) : const Color(0xFFf9f9f9),
             micaBackgroundColor: mica.enabled ? Colors.transparent : isDark ? const Color(0xFF202020) : const Color(0xFFf3f3f3),
             accentColor: appTheme.getColor(isDark),
             brightness: isDark ? Brightness.dark : Brightness.light,
             visualDensity: VisualDensity.standard,
             focusTheme: FocusThemeData(
-              glowFactor: is10footScreen() ? 2.0 : 0.0,
+              glowFactor: is10footScreen(context) ? 2.0 : 0.0,
             ),
           ),
         );
@@ -452,52 +411,35 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         }(),
         items: [
-          // It doesn't look good when resizing from compact to open
-          // PaneItemHeader(header: Text('User Interaction')),
-          ThemablePaneItem(
+          PaneItem(
             icon: const Icon(Mdi.androidDebugBridge),
             title: const Text('WSA'),
-            translucent: mica.enabled,
-            forceDisplayMode: appTheme.displayMode
-          )
-          /*PaneItem(
-            icon: Icon(
-              appTheme.displayMode == PaneDisplayMode.top
-                  ? FluentIcons.more
-                  : FluentIcons.more_vertical,
-            ),
-            title: const Text('Others'),
-          ),*/
+            body: const ScreenWSA(),
+          ),
         ],
         footerItems: [
           PaneItemSeparator(),
-          ThemablePaneItem(
+          PaneItem(
             icon: const Icon(FluentIcons.settings),
             title: Text(lang.screen_settings),
-            translucent: mica.enabled,
-            forceDisplayMode: appTheme.displayMode
+            body: ScreenSettings(controller: settingsController),
           ),
         ],
       ),
-      content: NavigationBody(index: index, children: [
-        const ScreenWSA(),
-        //const Others(),
-        ScreenSettings(controller: settingsController),
-      ]),
     );
   }
 }
 
 class WindowButtons extends StatelessWidget {
   const WindowButtons({Key? key}) : super(key: key);
-  static Color windowButtonAlphaColor(ThemeData style, Set<ButtonStates> states) {
+  static Color windowButtonAlphaColor(FluentThemeData style, Set<WidgetState> states) {
     if (style.brightness == Brightness.light) {
-      if (states.isPressing) return Colors.black.withOpacity(0.075);
-      if (states.isHovering) return Colors.black.withOpacity(0.11);
+      if (states.contains(WidgetState.pressed)) return Colors.black.withOpacity(0.075);
+      if (states.contains(WidgetState.hovered)) return Colors.black.withOpacity(0.11);
       return Colors.transparent;
     } else {
-      if (states.isPressing) return Colors.white.withOpacity(0.03);
-      if (states.isHovering) return Colors.white.withOpacity(0.06);
+      if (states.contains(WidgetState.pressed)) return Colors.white.withOpacity(0.03);
+      if (states.contains(WidgetState.hovered)) return Colors.white.withOpacity(0.06);
       return Colors.transparent;
     }
   }
@@ -506,7 +448,7 @@ class WindowButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     assert(debugCheckHasFluentTheme(context));
     assert(debugCheckHasFluentLocalizations(context));
-    final ThemeData theme = FluentTheme.of(context);
+    final FluentThemeData theme = FluentTheme.of(context);
     final mica = GState.mica.of(context);
 
     final buttonColors = WindowButtonColors(
@@ -514,10 +456,10 @@ class WindowButtons extends StatelessWidget {
       iconMouseDown: theme.inactiveColor,
       iconMouseOver: theme.inactiveColor,
       //Fixed button colors
-      mouseOver: mica.enabled ? windowButtonAlphaColor(theme, {ButtonStates.hovering}) : ButtonThemeData.buttonColor(
-          theme.brightness, {ButtonStates.hovering}).lerpWith(Colors.black, 0.12),
-      mouseDown: mica.enabled ? windowButtonAlphaColor(theme, {ButtonStates.pressing}) : ButtonThemeData.buttonColor(
-          theme.brightness, {ButtonStates.pressing}).lerpWith(theme.shadowColor, 0.12).withAlpha(150),
+      mouseOver: mica.enabled ? windowButtonAlphaColor(theme, {WidgetState.hovered}) : ButtonThemeData.buttonColor(
+          context, {WidgetState.hovered}).lerpWith(Colors.black, 0.12),
+      mouseDown: mica.enabled ? windowButtonAlphaColor(theme, {WidgetState.pressed}) : ButtonThemeData.buttonColor(
+          context, {WidgetState.pressed}).lerpWith(theme.shadowColor, 0.12).withAlpha(150),
     );
     final closeButtonColors = WindowButtonColors(
       mouseOver: Colors.red,

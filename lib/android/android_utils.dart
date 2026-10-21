@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names
+﻿// ignore_for_file: constant_identifier_names
 
 import 'package:wsa_pacman/android/reader_apk.dart';
 import 'package:wsa_pacman/android/reader_xapk.dart';

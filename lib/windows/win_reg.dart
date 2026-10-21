@@ -1,4 +1,4 @@
-// ignore_for_file: constant_identifier_names, non_constant_identifier_names, curly_braces_in_flow_control_structures
+﻿// ignore_for_file: constant_identifier_names, non_constant_identifier_names, curly_braces_in_flow_control_structures
 
 import 'dart:developer';
 import 'dart:ffi';

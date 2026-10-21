@@ -4,16 +4,16 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:jovial_svg/jovial_svg.dart';
-import 'package:mdi/mdi.dart';
+import 'package:wsa_pacman/widget/mdi.dart';
 import 'package:protobuf/protobuf.dart';
 import 'package:wsa_pacman/global_state.dart';
 import 'package:wsa_pacman/proto/options.pb.dart';
 import 'package:wsa_pacman/utils/locale_utils.dart';
 import 'package:wsa_pacman/widget/adaptive_icon.dart';
 import 'package:wsa_pacman/widget/fluent_card.dart';
-import 'package:wsa_pacman/widget/fluent_combo_box.dart';
-import 'package:wsa_pacman/widget/fluent_expander.dart';
-import 'package:wsa_pacman/widget/fluent_text_box.dart';
+
+
+
 import 'package:wsa_pacman/widget/smooth_list_view.dart';
 import 'package:wsa_pacman/windows/win_info.dart';
 
@@ -106,7 +106,7 @@ class ScreenSettingsState extends State<ScreenSettings> {
   static List<Widget> optionsList<E extends ProtobufEnum>(List<E> values, String Function(E)? title, bool Function(E e) checked, Function(E e) updater) =>
       optionsListDeferred<E, E>(values, title, (e) => e, checked, (e, v) => updater(e));
   
-  static late final _localeItems = <NamedLocale>[LocaleUtils.SYSTEM_LOCALE].followedBy(LocaleUtils.supportedLocales).map((l)=>ComboboxItem(child: Text(l.name), value: l)).toList();
+  static late final _localeItems = <NamedLocale>[LocaleUtils.SYSTEM_LOCALE].followedBy(LocaleUtils.supportedLocales).map((l)=>ComboBoxItem(child: Text(l.name), value: l)).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +177,7 @@ class ScreenSettingsState extends State<ScreenSettings> {
           FluentCard(
             leading: const Icon(Mdi.networkOutline , size: 23),
             content: Text(lang.settings_port),
-            trailing: SizedBox(width: 300, height: 32, child: FluentTextBox(
+            trailing: SizedBox(width: 300, height: 32, child: TextBox(
               inputFormatters: [
                 TextInputFormatter.withFunction((oldValue, newValue) {
                   var androidPortVal = (newValue.text.isNumeric()) ? (newValue.text.length > 5 || (newValue.text.isEmpty ? 58526 : int.parse(newValue.text)) <= 65535 ? newValue : TextEditingValue(text: "65535", selection: newValue.selection)) : 
@@ -188,7 +188,6 @@ class ScreenSettingsState extends State<ScreenSettings> {
               ],
               maxLength: 5,
               maxLines: 1,
-              maxLengthEnforced: true,
               controller: TextEditingController.fromValue(TextEditingValue(text: GState.androidPortPending.$)),
               autofocus: false,
               onChanged: (value)=>androidPortUpdater.update(value.isEmpty ? 58526 : int.parse(value)),
@@ -231,9 +230,8 @@ class ScreenSettingsState extends State<ScreenSettings> {
           FluentCard(
             leading: const Icon(Mdi.translate , size: 23),
             content: Text(lang.settings_language),
-            trailing: SizedBox(width: 300, height: 32, child: FluentCombobox<NamedLocale>(
-              allowUnknown: true,
-              onTap: (){}, placeholder: Text(locale_lang.name), 
+            trailing: SizedBox(width: 300, height: 32, child: ComboBox<NamedLocale>(
+              placeholder: Text(locale_lang.name), 
               isExpanded: true,
               value: locale_lang,
               onChanged: (l){if (l != null) GState.locale..$=l..persist();},
@@ -241,7 +239,7 @@ class ScreenSettingsState extends State<ScreenSettings> {
             )),
           ),
           smallSpacer,
-          ExpanderWin11(
+          Expander(
             leading: const Icon(Mdi.themeLightDark, size: 23),
             header: Text(lang.theme_mode),
             content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: 
@@ -252,7 +250,7 @@ class ScreenSettingsState extends State<ScreenSettings> {
             initiallyExpanded: false, // (false). Defaults to false
           ),
           smallSpacer,
-          if (WinVer.isWindows11OrGreater) ExpanderWin11(
+          if (WinVer.isWindows11OrGreater) Expander(
             leading: const Icon(Mdi.blur, size: 23),
             header: Text(lang.theme_mica),
             content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: 
@@ -263,7 +261,7 @@ class ScreenSettingsState extends State<ScreenSettings> {
             initiallyExpanded: false, // (false). Defaults to false
           ),
           if (WinVer.isWindows11OrGreater) smallSpacer,
-          ExpanderWin11(
+          Expander(
             leading: SizedBox(width: 23.00, height: 23.00, child: exampleIcon),
             header: Text(lang.theme_icon_adaptive),
             content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: 

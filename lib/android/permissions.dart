@@ -1,9 +1,9 @@
-// All permissions available at https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/res/AndroidManifest.xml
+﻿// All permissions available at https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/res/AndroidManifest.xml
 
 import 'dart:collection';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:mdi/mdi.dart';
+import 'package:wsa_pacman/widget/mdi.dart';
 import 'package:wsa_pacman/utils/locale_utils.dart';
 import 'package:collection/collection.dart';
 

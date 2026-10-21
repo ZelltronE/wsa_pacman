@@ -1,12 +1,12 @@
-// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures, camel_case_extensions
+﻿// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures, camel_case_extensions
 
 import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-export 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:wsa_pacman/l10n/app_localizations.dart';
+export 'package:wsa_pacman/l10n/app_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 import 'package:protobuf/protobuf.dart';
 import 'package:wsa_pacman/android/android_utils.dart';

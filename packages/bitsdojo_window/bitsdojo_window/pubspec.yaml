@@ -1,0 +1,22 @@
+name: bitsdojo_window
+description: A package to help with creating custom windows with Flutter desktop.
+version: 0.1.6
+publish_to: 'none'
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+  flutter: ">=3.0.0"
+
+flutter:
+  plugin:
+    platforms:
+      windows:
+        default_package: bitsdojo_window_windows
+
+dependencies:
+  flutter:
+    sdk: flutter
+  bitsdojo_window_platform_interface:
+    path: ../bitsdojo_window_platform_interface
+  bitsdojo_window_windows:
+    path: ../bitsdojo_window_windows

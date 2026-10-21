@@ -1,4 +1,4 @@
-// ignore_for_file: camel_case_types
+﻿// ignore_for_file: camel_case_types
 
 import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/widgets.dart';

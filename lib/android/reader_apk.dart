@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
+﻿// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
 
 import 'dart:async';
 import 'dart:collection';

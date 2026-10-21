@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures
+﻿// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures
 
 import 'dart:collection';
 import 'dart:ffi';
@@ -8,10 +8,10 @@ import 'package:ffi/ffi.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' as widgets;
 import 'package:win32/win32.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-export 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:wsa_pacman/l10n/app_localizations.dart';
+export 'package:wsa_pacman/l10n/app_localizations.dart';
 import 'package:intl/intl.dart' as intl;
-import 'package:flutter_localizations/flutter_localizations.dart' as locale;
+import 'package:flutter_localizations/flutter_localizations.dart' as localizations_pkg;
 import 'package:wsa_pacman/windows/win_io.dart';
 import 'string_utils.dart';
 
@@ -70,26 +70,18 @@ extension LocaleUtils on Locale {
 class _WidgetsLocalizationsOverridesDelegate extends widgets.LocalizationsDelegate<widgets.WidgetsLocalizations> {
   const _WidgetsLocalizationsOverridesDelegate();
   @override bool isSupported(Locale locale) => true;
-  @override Future<widgets.WidgetsLocalizations> load(Locale locale) => WidgetLocalizationOverrides.load(locale);
+  @override Future<widgets.WidgetsLocalizations> load(Locale locale) async {
+    final effectiveLocale = _RTL_LANGUAGE_OVERRIDES.contains(locale.languageCode.toLowerCase())
+        ? const Locale('fa')
+        : (localizations_pkg.GlobalWidgetsLocalizations.delegate.isSupported(locale) ? locale : const Locale('en'));
+    return localizations_pkg.GlobalWidgetsLocalizations.delegate.load(effectiveLocale);
+  }
   @override bool shouldReload(_WidgetsLocalizationsOverridesDelegate old) => false;
   @override String toString() => 'WidgetLocalizationOverrides.delegate(all locales)';
 }
 
-// Only used to add extra missing RTL languages
-class WidgetLocalizationOverrides extends locale.GlobalWidgetsLocalizations {
-  WidgetLocalizationOverrides(Locale locale) : super(locale) {
-    final String language = locale.languageCode.toLowerCase();
-    TextDirection defaultDirection = super.textDirection;
-    _textDirection = defaultDirection == TextDirection.rtl ? defaultDirection : 
-        _RTL_LANGUAGE_OVERRIDES.contains(language) ? TextDirection.rtl : TextDirection.ltr;
-  }
-  
-  late TextDirection _textDirection;
+class WidgetLocalizationOverrides {
   static const widgets.LocalizationsDelegate<widgets.WidgetsLocalizations> delegate = _WidgetsLocalizationsOverridesDelegate();
-  @override TextDirection get textDirection => _textDirection;
-  static Future<widgets.WidgetsLocalizations> load(Locale locale) {
-    return SynchronousFuture<widgets.WidgetsLocalizations>(WidgetLocalizationOverrides(locale));
-  }
 }
 
 

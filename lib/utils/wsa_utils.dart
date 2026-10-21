@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 
 import 'package:wsa_pacman/global_state.dart';
 import 'package:wsa_pacman/main.dart';
@@ -32,18 +32,16 @@ class WSAPkgInfo extends WinPkgInfo {
   }
 }
 
-class _TimeoutProcessResult extends ProcessResult {
-  _TimeoutProcessResult() : super(-1, -1, null, null);
-}
+final _timeoutProcessResult = ProcessResult(-1, -999, null, null);
 
 extension ProcessResultTimeout on ProcessResult {
-  bool get isTimeout => this is _TimeoutProcessResult;
+  bool get isTimeout => exitCode == -999;
 }
 
 extension ADBUtils on Future<ProcessResult> {
   Future<ProcessResult> defaultError() => onError((error, stackTrace) => ProcessResult(-1, -1, null, null));
   Future<ProcessResult> processTimeout(Duration duration) =>
-    timeout(duration, onTimeout: () => Future.value(_TimeoutProcessResult()));
+    timeout(duration, onTimeout: () => Future.value(_timeoutProcessResult));
 
   static String get deviceName => '${GState.ipAddress.$}:${GState.androidPort.$}';
   static String _toName(String ipAddress, int port) => '$ipAddress:$port';

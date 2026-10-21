@@ -1,4 +1,4 @@
-import 'dart:math' hide log;
+﻿import 'dart:math' hide log;
 import 'package:fluent_ui/fluent_ui.dart';
 
 //Display an Android adaptive icon

@@ -1,4 +1,4 @@
-// ignore_for_file: non_constant_identifier_names
+﻿// ignore_for_file: non_constant_identifier_names
 
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';

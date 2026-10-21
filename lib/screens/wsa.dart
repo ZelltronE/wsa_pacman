@@ -1,9 +1,9 @@
-// ignore_for_file: avoid_print
+﻿// ignore_for_file: avoid_print
 
 import 'dart:io';
 
 import 'package:fluent_ui/fluent_ui.dart';
-import 'package:mdi/mdi.dart';
+import 'package:wsa_pacman/widget/mdi.dart';
 import 'package:wsa_pacman/utils/wsa_utils.dart';
 import 'package:wsa_pacman/widget/fluent_card.dart';
 import 'package:wsa_pacman/widget/fluent_info_bar.dart';

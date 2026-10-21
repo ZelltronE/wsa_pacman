@@ -1,4 +1,4 @@
-// ignore_for_file: camel_case_types, constant_identifier_names, non_constant_identifier_names, curly_braces_in_flow_control_structures
+﻿// ignore_for_file: camel_case_types, constant_identifier_names, non_constant_identifier_names, curly_braces_in_flow_control_structures
 
 import 'dart:developer';
 import 'dart:ffi';
@@ -16,14 +16,14 @@ final ntdll = DynamicLibrary.open('ntdll.dll');
 final advapi32 = DynamicLibrary.open('advapi32.dll');
 const _ANYSYZE_ARRAY = 1;
 
-class UNICODE_STRING extends Struct {
+base class UNICODE_STRING extends Struct {
   @USHORT() external int length;
   @USHORT() external int maximumLength;
   external LPWSTR buffer;
   void free() => calloc.free(buffer);
 }
 
-class OBJECT_ATTRIBUTES extends Struct {
+base class OBJECT_ATTRIBUTES extends Struct {
   @ULONG() external int length;
   @HANDLE() external int rootDirectory;
   external Pointer<UNICODE_STRING> objectName;
@@ -42,7 +42,7 @@ class _IO_STATUS_BLOCK__Anonymous_e__Union extends Union {
   @IntPtr() external int hMonitor;
 }*/
 
-class REPARSE_MOUNTPOINT_DATA_BUFFER extends Struct {
+base class REPARSE_MOUNTPOINT_DATA_BUFFER extends Struct {
   @DWORD() external int reparseTag;
   @DWORD() external int reparseDataLength;
   @WORD() external int reserved;
@@ -52,12 +52,12 @@ class REPARSE_MOUNTPOINT_DATA_BUFFER extends Struct {
   @Array(_ANYSYZE_ARRAY) external Array<WCHAR> reparseTarget;
 }
 
-class _TOKEN_PRIVILEGES extends Struct {
+base class _TOKEN_PRIVILEGES extends Struct {
   @DWORD() external int privilegeCount;
   @Array(_ANYSYZE_ARRAY) external Array<_LUID_AND_ATTRIBUTES> privileges;
 }
 
-class _LUID_AND_ATTRIBUTES extends Struct {
+base class _LUID_AND_ATTRIBUTES extends Struct {
   external LUID luid;
   @DWORD() external int attributes;
 }
