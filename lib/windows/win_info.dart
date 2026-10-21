@@ -1,10 +1,10 @@
-﻿// ignore_for_file: non_constant_identifier_names
+// ignore_for_file: non_constant_identifier_names
 
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 import 'package:win32/win32.dart';
-import 'package:wsa_pacman/windows/win_wmi.dart';
+import 'package:wsa_pacman/windows/win_reg.dart';
 
 bool testFlag(int value, int attribute) => value & attribute == attribute;
 
@@ -14,7 +14,16 @@ class WinVer {
   int minor;
   WinVer._(this.major, this.minor);
 
-  static late final String WIN_CAPTION = WinWMI.queryString('Caption', 'Win32_OperatingSystem') ?? '';
+  static late final int buildNumber = int.tryParse(
+    WinReg.getString(RegHKey.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentBuildNumber')?.value ??
+    WinReg.getString(RegHKey.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\Windows NT\CurrentVersion', 'CurrentBuild')?.value ?? ''
+  ) ?? 0;
+
+  static late final String WIN_CAPTION = WinReg.getString(
+    RegHKey.HKEY_LOCAL_MACHINE,
+    r'SOFTWARE\Microsoft\Windows NT\CurrentVersion',
+    'ProductName',
+  )?.value ?? '';
 
   @override String toString() => '$major.$minor';
 
@@ -36,5 +45,5 @@ class WinVer {
   static late final bool isWindows8OrGreater = isAtLeast(6, 2);
   static late final bool isWindows10OrGreater = isAtLeast(10, 0);
   static late final bool isWindows11OrGreater = isAtLeast(10, 1) || 
-      (isAtLeast(10, 0) && !WIN_CAPTION.contains(RegExp(r'(^|\s)(Windows 10x?|Server 2016)($|\s)', caseSensitive: false)) );
+      (isAtLeast(10, 0) && buildNumber >= 22000);
 }

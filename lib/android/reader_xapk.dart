@@ -1,4 +1,4 @@
-﻿// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
 
 import 'dart:async';
 import 'dart:convert';
@@ -45,8 +45,7 @@ class XapkReader extends IsolateRunner<String, APK_READER_FLAGS> {
 
   Future<Archive> _initArchiveFile(File file) async => ZipDecoder().decodeBuffer(InputFileStream(file.path));
   void _initArchive() {
-    //Maintain a lock on the file
-    File file = File(data)..open();
+    File file = File(data);
     _xapkArchive = _initArchiveFile(file);
   }
 

@@ -1,4 +1,4 @@
-﻿// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures, camel_case_extensions
+// ignore_for_file: non_constant_identifier_names, constant_identifier_names, curly_braces_in_flow_control_structures, camel_case_extensions
 
 import 'dart:async';
 import 'dart:developer';
@@ -131,7 +131,7 @@ class AppOptions {
       }
       oldDirectory.delete(recursive: false);
     }
-    _optionsFile = File("${directory.path}\\options.bin")..createSync()..openSync();
+    _optionsFile = File("${directory.path}\\options.bin")..createSync();
     _lastModified = _optionsFile!.lastModified();
     directory.watch().listen((event) {
       if (event.path.endsWith('\\options.bin')) _checkSettingsFileChange();

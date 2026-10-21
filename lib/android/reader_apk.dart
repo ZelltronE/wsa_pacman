@@ -1,4 +1,4 @@
-﻿// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
+// ignore_for_file: non_constant_identifier_names, curly_braces_in_flow_control_structures, constant_identifier_names
 
 import 'dart:async';
 import 'dart:collection';
@@ -67,30 +67,41 @@ class ApkReader extends IsolateRunner<String, APK_READER_FLAGS> {
   });
 
   static Future<Archive> _initArchiveFile(File file) async {
-    // This fixes issues when loading huge files (I'm allowing sync reads on SSDs only, and setting a 320MB limit)
-    return file.isInSSD() && file.lengthSync() < 335544321 ?
-       ZipDecoder().decodeBytes(file.readAsBytesSync()) :
-       ZipDecoder().decodeBuffer(InputFileStream(file.absolute.path));
+    bool isSSD = false;
+    try {
+      isSSD = file.isInSSD();
+    } catch (_) {
+      isSSD = false;
+    }
+    final int fileLength = file.lengthSync();
+    return (isSSD && fileLength < 335544321)
+        ? ZipDecoder().decodeBytes(file.readAsBytesSync())
+        : ZipDecoder().decodeBuffer(InputFileStream(file.absolute.path));
   }
 
   static void _initArchive() {
-    //Maintain a lock on the file
-    File file = File(APK_FILE)..open();
+    File file = File(APK_FILE);
     _apkArchive = _initArchiveFile(file);
   }
 
   /// Decodes a binary xml
   static Future<Uint8List> _decodeXml(List<int> encoded) async {
-    var axmldec = await Process.start('${Env.TOOLS_DIR}\\axmldec.exe', []);
-    axmldec.stdin.add(encoded);
-    //For some reason i need this
-    axmldec.stdin.writeln();
-    await axmldec.stdin.flush();
-    await axmldec.stdin.close();
-    var builder = BytesBuilder();
-    //Encoded is just there not to create a new empty list
-    await axmldec.stdout.fold(encoded, (prev, newv){builder.add(newv); return prev;});
-    return builder.takeBytes();
+    try {
+      var axmldec = await Process.start('${Env.TOOLS_DIR}\\axmldec.exe', []);
+      axmldec.stdin.add(encoded);
+      axmldec.stdin.writeln();
+      await axmldec.stdin.flush();
+      await axmldec.stdin.close();
+      var builder = BytesBuilder();
+      await axmldec.stdout.fold(encoded, (prev, newv) {
+        builder.add(newv);
+        return prev;
+      });
+      return builder.takeBytes();
+    } catch (e, st) {
+      log('Error decoding binary XML with axmldec: $e\n$st');
+      return Uint8List(0);
+    }
   }
 
   /// Returns the gradient as an aapt xml element

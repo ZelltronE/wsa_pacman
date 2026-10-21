@@ -88,7 +88,9 @@ class Env {
   static final String SYSTEM_ROOT = Platform.environment["SystemRoot"] ?? "";
   static final String USER_PROFILE = Platform.environment["UserProfile"] ?? "";
   static final String EXEC_DIR = Platform.resolvedExecutable.replaceFirst(RegExp(r'[/\\][^/\\]*$'), r'\');
-  static final String TOOLS_DIR = "${EXEC_DIR}embedded-tools\\";
+  static final String TOOLS_DIR = Directory("${EXEC_DIR}embedded-tools\\").existsSync()
+      ? "${EXEC_DIR}embedded-tools\\"
+      : "${Directory.current.path}\\embedded-tools\\";
   static late final String POWERSHELL = WinReg.getString(RegHKey.HKEY_LOCAL_MACHINE, r'SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell', 'Path')?.value ?? '$SYSTEM_ROOT\\System32\\WindowsPowerShell\v1.0\\powershell.exe';
   static late final String WSA_SYSTEM_PATH = RegExp(r'^(.*)[\\/]+[^\\/]*[\\/]+[^\\/]*$').firstMatch(
       WinReg.getString(RegHKey.HKEY_LOCAL_MACHINE, r'SYSTEM\CurrentControlSet\Services\WsaService', 'ImagePath')?.value.unquoted ??
@@ -252,11 +254,12 @@ void main(List<String> arguments) async {
       }
       win.alignment = Alignment.center;
       win.show();
-      late final _SET_VISIBLE = Constants.isolate?.sendFlag(APK_READER_FLAGS.UI_LOADED, true);
-      late final Timer uiTimer; uiTimer = Timer.periodic(const Duration(milliseconds: 100), (t) {if (win.isVisible) {
-        _SET_VISIBLE;
-        uiTimer.cancel();
-      }});
+      late final Timer uiTimer; uiTimer = Timer.periodic(const Duration(milliseconds: 100), (t) {
+        if (win.isVisible) {
+          Constants.isolate?.sendFlag(APK_READER_FLAGS.UI_LOADED, true);
+          uiTimer.cancel();
+        }
+      });
     });
   }
 }
