@@ -141,6 +141,14 @@ class WSAPeriodicConnector {
     final prevStatus = status;
     final process = await ADBUtils.devices();
     final output = process.stdout.toString();
+    final portMatch = RegExp(r'(?:localhost|127\.0\.0\.1):(\d+)\s+(device|offline|unauthorized)').firstMatch(output);
+    if (portMatch != null) {
+      final detectedPort = int.tryParse(portMatch.group(1)!);
+      if (detectedPort != null && detectedPort != GState.androidPort.$) {
+        GState.androidPort.update((_) => detectedPort);
+        GState.androidPortPending.update((_) => detectedPort.toString());
+      }
+    }
     if (output.contains(RegExp('(^|\\n)(localhost|127.0.0.1):${GState.androidPort.$}\\s+'))) {
       if (output.contains(RegExp('(^|\\n)(localhost|127.0.0.1):${GState.androidPort.$}\\s+offline(\$|\\n|\\s)')))
         status = (status == ConnectionStatus.ARRESTED || status == ConnectionStatus.STARTING) && shouldWaitStart ? 

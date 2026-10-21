@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 
 import 'package:wsa_pacman/global_state.dart';
 import 'package:wsa_pacman/main.dart';
@@ -8,16 +8,43 @@ import '../utils/string_utils.dart';
 import '../utils/regexp_utils.dart';
 
 class WSAUtils {
-  static bool launch([String? param]) => WinIO.run(ShellOp.OPEN, "shell:appsFolder\\${Env.WSA_INFO.familyName}!${Env.WSA_INFO.clientID}", param);
-  static bool launchApp(String package) => launch("/launch wsa://$package");
-  static bool launchSettings() => launchApp("com.android.settings");
-  static bool launchDeveloperSettings() => launch("/deeplink wsa-client://developer-settings");
+  static bool launch([String? param]) {
+    bool ok = WinIO.run(ShellOp.OPEN, "shell:appsFolder\\${Env.WSA_INFO.familyName}!${Env.WSA_INFO.clientID}", param);
+    if (!ok) {
+      if (param != null && (param.startsWith('wsa://') || param.startsWith('wsa-client://'))) {
+        ok = WinIO.run(ShellOp.OPEN, param, null);
+      } else {
+        ok = WinIO.run(ShellOp.OPEN, "wsa://", null);
+      }
+    }
+    if (!ok && File(Env.WSA_EXECUTABLE).existsSync()) {
+      Process.run(Env.WSA_EXECUTABLE, param != null ? [param] : []);
+      return true;
+    }
+    return ok;
+  }
+
+  static bool launchApp(String package) => launch("wsa://$package");
+  static bool launchSettings() {
+    final settingsExe = '${Env.WSA_SYSTEM_PATH}\\WsaSettings.exe';
+    if (File(settingsExe).existsSync()) {
+      Process.run(settingsExe, []);
+      return true;
+    }
+    return launchApp("com.android.settings");
+  }
+  static bool launchDeveloperSettings() {
+    final settingsExe = '${Env.WSA_SYSTEM_PATH}\\WsaSettings.exe';
+    if (File(settingsExe).existsSync()) {
+      Process.run(settingsExe, ['/deeplink', 'wsa-client://developer-settings']);
+      return true;
+    }
+    return launch("/deeplink wsa-client://developer-settings");
+  }
   static bool launchSystem() => launchApp("android.system");
   static bool shutdown() => launch("/shutdown");
   static bool modifyApp(String package) => launch("/modify $package");
   static bool launchPartial() => launch("/partiallyrunning");
-  //launch("/jump");    // No idea what this does
-  //launch("/deeplink wsa-client://legal-settings");    // Legal settings, pretty useless stuff
 }
 
 class WSAPkgInfo extends WinPkgInfo {
