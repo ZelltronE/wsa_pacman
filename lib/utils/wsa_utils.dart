@@ -9,6 +9,13 @@ import '../utils/regexp_utils.dart';
 
 class WSAUtils {
   static bool launch([String? param]) {
+    // Direct protocol URI activation when param has a registered scheme
+    if (param != null && (param.startsWith('wsa://') || param.startsWith('wsa-client://') || param.startsWith('wsa-settings://'))) {
+      if (WinIO.run(ShellOp.OPEN, param, null)) {
+        return true;
+      }
+    }
+
     bool ok = WinIO.run(ShellOp.OPEN, "shell:appsFolder\\${Env.WSA_INFO.familyName}!${Env.WSA_INFO.clientID}", param);
     if (!ok) {
       if (param != null && (param.startsWith('wsa://') || param.startsWith('wsa-client://'))) {
@@ -25,7 +32,17 @@ class WSAUtils {
   }
 
   static bool launchApp(String package) => launch("wsa://$package");
+
   static bool launchSettings() {
+    // 1. Direct protocol activation for WSA Settings app
+    if (WinIO.run(ShellOp.OPEN, "wsa-settings://", null)) {
+      return true;
+    }
+    // 2. Direct AppX activation for SettingsApp
+    if (WinIO.run(ShellOp.OPEN, "shell:appsFolder\\${Env.WSA_INFO.familyName}!SettingsApp", null)) {
+      return true;
+    }
+    // 3. Fallback to direct executable if available
     final settingsExe = '${Env.WSA_SYSTEM_PATH}\\WsaSettings.exe';
     if (File(settingsExe).existsSync()) {
       Process.run(settingsExe, []);
@@ -33,14 +50,35 @@ class WSAUtils {
     }
     return launchApp("com.android.settings");
   }
+
   static bool launchDeveloperSettings() {
+    if (WinIO.run(ShellOp.OPEN, "wsa-client://developer-settings", null)) {
+      return true;
+    }
+    if (launch("/deeplink wsa-client://developer-settings")) {
+      return true;
+    }
     final settingsExe = '${Env.WSA_SYSTEM_PATH}\\WsaSettings.exe';
     if (File(settingsExe).existsSync()) {
       Process.run(settingsExe, ['/deeplink', 'wsa-client://developer-settings']);
       return true;
     }
-    return launch("/deeplink wsa-client://developer-settings");
+    return false;
   }
+
+  static bool launchManageApplications() {
+    // 1. Deeplink to App Settings page in WSA Settings
+    if (WinIO.run(ShellOp.OPEN, "wsa-client://app-settings", null)) {
+      return true;
+    }
+    // 2. Launch via WsaClient deeplink
+    if (launch("/deeplink wsa-client://app-settings")) {
+      return true;
+    }
+    // 3. Fallback to general settings
+    return launchSettings();
+  }
+
   static bool launchSystem() => launchApp("android.system");
   static bool shutdown() => launch("/shutdown");
   static bool modifyApp(String package) => launch("/modify $package");

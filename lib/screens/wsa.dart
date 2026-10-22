@@ -1,4 +1,4 @@
-﻿// ignore_for_file: avoid_print
+// ignore_for_file: avoid_print
 
 import 'dart:io';
 
@@ -94,19 +94,34 @@ class _ScreenWSAState extends State<ScreenWSA> {
             leading: const Icon(Mdi.android , size: 23),
             content: Text(lang.wsa_manage_app),
             isButton: true,
-            onPressed: connectionStatus.isDisconnected ? 
-                null : () => ADBUtils.shellToAddress(GState.ipAddress.of(context), GState.androidPort.of(context), 
-                  r'am start -f 0x10008000 -n com.android.settings/.Settings\$ManageApplicationsActivity'),
+            onPressed: (!Env.WSA_INSTALLED && connectionStatus.isDisconnected) ? 
+                null : () {
+                  WSAUtils.launchManageApplications();
+                  if (!connectionStatus.isDisconnected) {
+                    ADBUtils.shellToAddress(
+                      GState.ipAddress.of(context),
+                      GState.androidPort.of(context),
+                      'am start -a android.settings.APPLICATION_SETTINGS',
+                    );
+                  }
+                },
           ),
           smallSpacer,
           FluentCard(
             leading: const Icon(Mdi.cogs, size: 23),
             content: Text(lang.wsa_manage_settings),
             isButton: true,
-            onPressed: connectionStatus.isDisconnected ?
-                connectionStatus.isPoweredOn ? () => WSAUtils.launchSettings() : null : 
-                () => ADBUtils.shellToAddress(GState.ipAddress.of(context), GState.androidPort.of(context), 
-                  r'am start com.android.settings/.Settings'),
+            onPressed: (!Env.WSA_INSTALLED && connectionStatus.isDisconnected) ?
+                null : () {
+                  WSAUtils.launchSettings();
+                  if (!connectionStatus.isDisconnected) {
+                    ADBUtils.shellToAddress(
+                      GState.ipAddress.of(context),
+                      GState.androidPort.of(context),
+                      'am start -a android.settings.SETTINGS',
+                    );
+                  }
+                },
           )
 
         ],
