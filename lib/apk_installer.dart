@@ -70,6 +70,46 @@ class _ApkInstallerState extends State<ApkInstaller> {
   ToggleButtonThemeData? warningButtonTheme;
   bool createShortcut = false;
   bool startingWSA = false;
+  bool pendingInstall = false;
+  StreamSubscription? _connectionSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _connectionSub = GState.connectionStatus.stream.listen((status) {
+      if (status.isConnected) {
+        if (startingWSA) {
+          setState(() { startingWSA = false; });
+        }
+        if (pendingInstall) {
+          pendingInstall = false;
+          _doInstall();
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectionSub?.cancel();
+    super.dispose();
+  }
+
+  void _doInstall() {
+    final lang = AppLocalizations.of(context);
+    if (lang == null) return;
+    final ipAddress = GState.ipAddress.$;
+    final port = GState.androidPort.$;
+    final installTimeout = GState.installTimeout.$;
+    final installType = GState.apkInstallType.$;
+    final isDowngrade = installType == InstallType.DOWNGRADE;
+
+    if (Constants.packageType.directInstall) {
+      ApkInstaller.installApk(Constants.packageFile, ipAddress, port, lang, installTimeout, isDowngrade);
+    } else {
+      GState.installCallback.$?.call(ipAddress, port, lang, installTimeout, isDowngrade);
+    }
+  }
   
   @override
   Widget build(BuildContext context) {
@@ -83,7 +123,6 @@ class _ApkInstallerState extends State<ApkInstaller> {
     WSAStatusAlert connectionStatus = GState.connectionStatus.of(context);
     bool isConnected = connectionStatus.isConnected;
     InstallType? installType = GState.apkInstallType.of(context);
-    bool canInstall = isConnected && installType != null && installType != InstallType.UNKNOWN;
     InstallState installState = GState.apkInstallState.of(context);
     final mica = GState.mica.of(context);
     final theme = FluentTheme.of(context);
@@ -134,17 +173,17 @@ class _ApkInstallerState extends State<ApkInstaller> {
               const SizedBox(height: 10),
               Text((oldVersion.isNotEmpty ? lang.installer_info_version_change(oldVersion, version) : lang.installer_info_version(version)).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.resources.textFillColorDisabled), overflow: TextOverflow.ellipsis, maxLines: 1),
               Text(lang.installer_info_package(package).replaceAll(' ', '\u00A0'), style: TextStyle(color: theme.resources.textFillColorDisabled), overflow: TextOverflow.ellipsis, maxLines: 1),
-              /*SmoothListView(
-                padding: EdgeInsets.only(
-                  bottom: kPageDefaultVerticalPadding,
-                  left: PageHeader.horizontalPadding(context),
-                  right: PageHeader.horizontalPadding(context),
-                ),
-                //controller: controller,
-                children: [const Text("Hello darkness my old friend", )]
-              )*/
             ]
           ),
+          if (!isConnected)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: InfoBar(
+                title: Text(startingWSA ? lang.installer_btn_starting : connectionStatus.title(lang)),
+                content: Text(startingWSA ? lang.status_starting_desc : "WSA está apagado o en reposo. Pulsa 'Instalar' para encenderlo."),
+                severity: startingWSA ? InfoBarSeverity.info : InfoBarSeverity.warning,
+              ),
+            ),
           const SizedBox(height: 10),
           Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Container(
             //decoration: ChipTheme.of(context).decoration?.resolve({ButtonStates.focused})?.lerpTo(SnackbarTheme.of(context).decoration, 0.07),
@@ -179,16 +218,18 @@ class _ApkInstallerState extends State<ApkInstaller> {
                 child: Text(startingWSA ? lang.installer_btn_starting : installType?.buttonText(lang) ?? lang.installer_btn_loading),
                 checked: true,
                 style: installType == InstallType.DOWNGRADE ? warningButtonTheme : null,
-                onChanged: !canInstall ? null : (_){
-                  if (Constants.packageType.directInstall) ApkInstaller.installApk(Constants.packageFile, ipAddress, port, lang, installTimeout, installType == InstallType.DOWNGRADE);
-                  else GState.installCallback.$?.call(ipAddress, port, lang, installTimeout, installType == InstallType.DOWNGRADE);
+                onChanged: startingWSA ? null : (_) {
+                  if (isConnected) {
+                    _doInstall();
+                  } else {
+                    setState(() {
+                      startingWSA = true;
+                      pendingInstall = true;
+                    });
+                    WSAUtils.launch();
+                  }
                 },
               )),
-              /*const SizedBox(width: 15),noMoveWindow(ToggleButton(
-                child: const Text('TEST-ICON'),
-                checked: true,
-                onChanged: (_){ApkReader.init();},
-              ))*/
             ]
           )
         ];

@@ -225,15 +225,18 @@ class ApkReader extends IsolateRunner<String, APK_READER_FLAGS> {
       //cmd package dump
       var verMatch = RegExp(r'(\n|\s|^)versionCode=([0-9]*)[^\n]*(\n([^\s\n]*\s)*versionName=([^\n\s_$]*))?').firstMatch(result.stdout.toString());
       int? oldVersionCode = int.tryParse(verMatch?.group(2) ?? "");
-      if (result.exitCode != 0) GState.apkInstallType.update((_) => InstallType.UNKNOWN);
-      else if (oldVersionCode != null) {
+      if (oldVersionCode != null) {
         GState.apkInstallType.update((_) => (oldVersionCode < versionCode) ? InstallType.UPDATE : 
             (oldVersionCode > versionCode) ? InstallType.DOWNGRADE : InstallType.REINSTALL);
         String oldVersion = verMatch!.group(5) ?? "???";
         GState.oldVersion.update((_) => oldVersion);
       }
-      else GState.apkInstallType.update((_) => InstallType.INSTALL);
-    }).onError((_, __) {GState.apkInstallType.update((_) => InstallType.UNKNOWN);});
+      else {
+        GState.apkInstallType.update((_) => InstallType.INSTALL);
+      }
+    }).onError((_, __) {
+      GState.apkInstallType.update((_) => InstallType.INSTALL);
+    });
   } else return null;}
 
   void loadInstallInfoOnUIThread(String package, int versionCode) => package.isNotEmpty ? executeInUi(() {

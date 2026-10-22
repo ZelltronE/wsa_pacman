@@ -74,7 +74,11 @@ extension ADBUtils on Future<ProcessResult> {
   static String _toName(String ipAddress, int port) => '$ipAddress:$port';
   static String get adbPath => '${Env.TOOLS_DIR}\\adb.exe';
 
-  static Future<ProcessResult> _command(List<String> args, {String? workDir}) => Process.run(adbPath, args, workingDirectory: workDir);
+  static Future<ProcessResult> _command(List<String> args, {String? workDir, Duration timeout = const Duration(seconds: 8)}) =>
+      Process.run(adbPath, args, workingDirectory: workDir).timeout(
+        timeout,
+        onTimeout: () => _timeoutProcessResult,
+      );
   static Future<ProcessResult> command(String command, {String? param, String? workDir}) => _command([command, if (param != null) param], workDir: workDir);
   static Future<ProcessResult> commandWSA(String command, String? Function(String device) param, {String? workDir}) => ADBUtils.command(command, param: param(deviceName), workDir: workDir);
 

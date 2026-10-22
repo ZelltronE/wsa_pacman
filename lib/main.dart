@@ -150,8 +150,20 @@ class WSAPeriodicConnector {
         GState.androidPort.update((_) => detectedPort);
         GState.androidPortPending.update((_) => detectedPort.toString());
       }
-    }
-    if (output.contains(RegExp('(^|\\n)(localhost|127.0.0.1):${GState.androidPort.$}\\s+'))) {
+      if (portMatch.group(2) == 'device') {
+        status = ConnectionStatus.CONNECTED;
+        if (output.contains(RegExp('(^|\\n)127.0.0.1:'))) {
+          if (GState.ipAddress.$ != "127.0.0.1") GState.ipAddress.update((old) => "127.0.0.1");
+        } else if (GState.ipAddress.$ != "localhost") {
+          GState.ipAddress.update((old) => "localhost");
+        }
+      } else if (portMatch.group(2) == 'offline') {
+        status = (status == ConnectionStatus.ARRESTED || status == ConnectionStatus.STARTING) && shouldWaitStart ? 
+            ConnectionStatus.STARTING : ConnectionStatus.OFFLINE;
+      } else if (portMatch.group(2) == 'unauthorized') {
+        status = ConnectionStatus.UNAUTHORIZED;
+      }
+    } else if (output.contains(RegExp('(^|\\n)(localhost|127.0.0.1):${GState.androidPort.$}\\s+'))) {
       if (output.contains(RegExp('(^|\\n)(localhost|127.0.0.1):${GState.androidPort.$}\\s+offline(\$|\\n|\\s)')))
         status = (status == ConnectionStatus.ARRESTED || status == ConnectionStatus.STARTING) && shouldWaitStart ? 
             ConnectionStatus.STARTING : ConnectionStatus.OFFLINE;
@@ -170,10 +182,6 @@ class WSAPeriodicConnector {
         else if (GState.ipAddress.$ != "localhost") GState.ipAddress.update((old) => "localhost");
       }
     }
-    //else status = ConnectionStatus.DISCONNECTED;
-    /*if (status != prevStatus) {
-      (alert.title as Text).data = ""
-    }*/
     else await _tryConnect();
     if (status != prevStatus) GState.connectionStatus.update((p0) => status.statusAlert);
     _statusInitialized = false;
@@ -186,13 +194,18 @@ class WSAPeriodicConnector {
   }
 
   static Future<void> _tryConnect() async {
-    ProcessResult? process = await ADBUtils.connectWSA().processTimeout(const Duration(milliseconds: 200));
-    if (process.stdout?.toString().contains(RegExp(r'(^|\n)(cannot|failed to) connect\s.*')) ?? true) 
+    ProcessResult? process = await ADBUtils.connectWSA().processTimeout(const Duration(seconds: 4));
+    final stdout = process?.stdout?.toString() ?? '';
+    if (stdout.contains(RegExp(r'(connected to|already connected)')) || (process != null && process.exitCode == 0)) {
+      status = ConnectionStatus.CONNECTED;
+    } else if (stdout.contains(RegExp(r'(^|\n)(cannot|failed to) connect\s.*')) || (process?.isTimeout ?? true)) {
       status = Env.WSA_INSTALLED ? (status == ConnectionStatus.ARRESTED || status == ConnectionStatus.STARTING) && shouldWaitStart ? 
           ConnectionStatus.STARTING : ConnectionStatus.OFFLINE : ConnectionStatus.DISCONNECTED;
-    else if (process.stdout?.toString().contains(RegExp(r'(^|\n)(cannot|failed to) authenticate\s.*')) ?? true) 
+    } else if (stdout.contains(RegExp(r'(^|\n)(cannot|failed to) authenticate\s.*'))) {
       status = ConnectionStatus.UNAUTHORIZED;
-    else status = ConnectionStatus.CONNECTED;
+    } else {
+      status = ConnectionStatus.CONNECTED;
+    }
   }
 }
 

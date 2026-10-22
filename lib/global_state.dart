@@ -38,7 +38,7 @@ class GState {
   static final iconShape = PersistableValue<Options_IconShape>(value: Options_IconShape.SQUIRCLE, loader: (o)=>o.iconShape, setter: (o,e)=> o.iconShape = e);
   static final legacyIcons = PersistableValue<bool>(value: false, loader: (o)=>o.legacyIcons, setter: (o,e)=> o.legacyIcons = e);
   static final mica = PersistableValue<Options_Mica>(value: Options_Mica.FULL, loader: (o)=>o.mica, setter: (o,e)=> o.mica = e);
-  static final autostartWSA = PersistableValue<bool>(value: false, loader: (o)=>o.autostart, setter: (o,e)=> o.autostart = e);
+  static final autostartWSA = PersistableValue<bool>(value: true, loader: (o)=>o.autostart, setter: (o,e)=> o.autostart = e);
   static final installTimeout = PersistableValue<int>(value: 30, loader: (o)=>o.timeout, setter: (o,e)=> o.timeout = e);
   // APK Info
   static final apkTitle = SharedValue<String>(value: "");
