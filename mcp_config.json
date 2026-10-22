@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "dart-lsp": {
+      "command": "dart",
+      "args": ["language-server", "--protocol=lsp"]
+    },
+    "wsa-pacman-runner": {
+      "command": "python",
+      "args": [
+        "scripts/runner_mcp.py"
+      ],
+      "env": {
+        "WORKSPACE_ROOT": "."
+      }
+    }
+  }
+}

@@ -1,0 +1,34 @@
+# OPERATIONAL DIRECTIVES FOR WSA-PACMAN AGENT
+
+## 1. PORTABLE PATHS & PRIVACY ENFORCEMENT (ZERO HARDCODED PATHS / SECRETS / PII):
+- STRICTLY PROHIBITED: Hardcoding absolute paths (e.g. `C:\Users\<user>\...`, `/home/<user>/...`), developer usernames, machine names, local drive letters, personal directories, or credentials in any file.
+- All paths must resolve dynamically and portably via:
+  * Dart: `Directory.current`, `Platform.resolvedExecutable`, `Platform.environment['APPDATA']`, or relative asset folders (`embedded-tools/`).
+  * PowerShell: `$PSScriptRoot`, `$env:APPDATA`, `$env:LOCALAPPDATA`, or relative navigation.
+  * Python: `os.path.dirname(os.path.abspath(__file__))`, `sys.executable`, or `os.environ`.
+  * Configuration: Relative workspace paths (`.`, `scripts/runner_mcp.py`).
+- Before any commit or push, run `check_portable_compliance()` to guarantee zero path leaks or PII disclosure.
+
+## 2. CODE NAVIGATION & INTEGRITY:
+- Always query the AST via `ast-grep` or request symbol references via LSP before refactoring.
+- NEVER introduce COM/WMI security initializers or uninitializers into the UI thread. Use Win32 Registry APIs (`HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion`) or Win32 Service Manager APIs.
+
+## 3. ATOMIC SCOPE DISCIPLINE (DIRECTIVE 4):
+- Only modify files strictly necessary for the assigned milestone or bug fix.
+- Do not reformat untouched files or modify unrelated imports.
+- Keep isolate boundaries clean: send only primitive data types, SendPort instances, or transferrable byte buffers.
+
+## 4. DUAL-STREAM STREAM INSPECTION & VERIFICATION (DIRECTIVES 2 & 3):
+- Never assume an external process succeeded based solely on `stderr` being empty. Always inspect both `stdout` and `stderr`.
+- Mandatory verification workflow after any code edit:
+  a. Call `run_flutter_analyze()` -> Must exit with 0 errors.
+  b. Call `run_flutter_test()` -> All test suites (16/16 tests minimum) must pass.
+  c. Call `check_portable_compliance()` -> Zero leaked absolute paths.
+- If tests fail, diagnose using both output streams before proposing further changes.
+
+## 5. PRE-PUSH REVIEW GATE (DIRECTIVE 5 - MANDATORY WORKFLOW RULE):
+- Under NO circumstances may you run `git push` directly or autonomously.
+- Before any remote synchronization, you MUST present the complete proposed commit:
+  * Commit Title (Conventional Commits: `feat(...)`, `fix(...)`, `refactor(...)`, `chore(...)`)
+  * Detailed Commit Body (Root causes identified, components updated, verification results)
+- Wait for explicit user confirmation, modifications, or approvals before deployment.

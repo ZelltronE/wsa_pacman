@@ -44,3 +44,4 @@ app.*.map.json
 ios/
 linux/
 macos/
+__pycache__/
