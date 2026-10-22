@@ -2,9 +2,18 @@
 ; Generates an installer with Inno Setup.
 
 #define tools_dir_name "embedded-tools"
-#define releasedir "..\build\windows\runner\Release\"
-#define instbuilddir "..\build\installer"
-#define toolsdir "..\"+tools_dir_name
+
+#ifndef releasedir
+  #define releasedir "..\build\windows\x64\runner\Release"
+#endif
+
+#ifndef instbuilddir
+  #define instbuilddir "..\build\installer"
+#endif
+
+#ifndef toolsdir
+  #define toolsdir "..\" + tools_dir_name
+#endif
 
 #define vcredist_version "14.31.31103.00"
 
@@ -16,17 +25,23 @@
 
 #define reg_assoc_xapk reg_appname + ".xapk"
 #define reg_assoc_apk reg_appname + ".apk"
+#define reg_assoc_apks reg_appname + ".apks"
+#define reg_assoc_apkm reg_appname + ".apkm"
 
 #define path_classes "SOFTWARE\Classes\"
 #define path_assoc_user "Software\Microsoft\Windows\CurrentVersion\Explorer\FileExts\"
 #define path_assoc_default ".DEFAULT\"+path_assoc_user 
 
 [Setup]
-AppVersion=1.5.0
+#ifndef AppVersion
+  #define AppVersion "1.6.0"
+#endif
+AppVersion={#AppVersion}
 PrivilegesRequired=admin
+UsedUserAreasWarning=no
 AppName=WSA PacMan
-AppPublisher=alesimula
-ArchitecturesInstallIn64BitMode=x64
+AppPublisher=ZelltronE & alesimula
+ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
 DefaultDirName={autopf}\WSA PacMan
 DefaultGroupName=WSA PacMan
@@ -39,8 +54,11 @@ OutputBaseFilename={#dist_appname}-v{#SetupSetting("AppVersion")}-installer
 OutputDir={#instbuilddir}
 
 [Tasks]
+Name: desktopicon; Description: "{cm:CreateDesktopIcon}"; Flags: unchecked
 Name: fileassoc_apk; Description: "{cm:AssocFileExtension,{#app_name},.apk}";
 Name: fileassoc_xapk; Description: "{cm:AssocFileExtension,{#app_name},.xapk}";
+Name: fileassoc_apks; Description: "{cm:AssocFileExtension,{#app_name},.apks}";
+Name: fileassoc_apkm; Description: "{cm:AssocFileExtension,{#app_name},.apkm}";
 
 [Registry]
 Root: HKA; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: string; ValueName: "WSA_PACMAN_HOME"; ValueData: "{app}"; Flags: createvalueifdoesntexist preservestringtype uninsdeletevalue
@@ -60,9 +78,25 @@ Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_xapk}\DefaultIcon"; ValueData: "
 Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_xapk}\shell\open\command";  ValueData: """%WSA_PACMAN_HOME%\{#executable}"" ""%1""";  ValueType: expandsz;  ValueName: ""
 Root: HKU; Subkey: "{#path_assoc_default}\.xapk\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_xapk
 Root: HKCU; Subkey: "{#path_assoc_user}\.xapk\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_xapk
+; File association: apks
+Root: HKA; Subkey: "{#path_classes}\.apks"; ValueData: "{#reg_assoc_apks}"; Flags: uninsdeletevalue; ValueType: string; ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\.apks\OpenWithProgids"; ValueType: string; ValueName: "{#reg_assoc_apks}"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apks}"; ValueData: "{#reg_name_installer}"; Flags: uninsdeletekey; ValueType: string; ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apks}\DefaultIcon"; ValueData: "%WSA_PACMAN_HOME%\{#executable},0"; ValueType: expandsz;  ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apks}\shell\open\command";  ValueData: """%WSA_PACMAN_HOME%\{#executable}"" ""%1""";  ValueType: expandsz;  ValueName: ""
+Root: HKU; Subkey: "{#path_assoc_default}\.apks\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_apks
+Root: HKCU; Subkey: "{#path_assoc_user}\.apks\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_apks
+; File association: apkm
+Root: HKA; Subkey: "{#path_classes}\.apkm"; ValueData: "{#reg_assoc_apkm}"; Flags: uninsdeletevalue; ValueType: string; ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\.apks\OpenWithProgids"; ValueType: string; ValueName: "{#reg_assoc_apkm}"; ValueData: ""; Flags: uninsdeletevalue
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apkm}"; ValueData: "{#reg_name_installer}"; Flags: uninsdeletekey; ValueType: string; ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apkm}\DefaultIcon"; ValueData: "%WSA_PACMAN_HOME%\{#executable},0"; ValueType: expandsz;  ValueName: ""
+Root: HKA; Subkey: "{#path_classes}\{#reg_assoc_apkm}\shell\open\command";  ValueData: """%WSA_PACMAN_HOME%\{#executable}"" ""%1""";  ValueType: expandsz;  ValueName: ""
+Root: HKU; Subkey: "{#path_assoc_default}\.apkm\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_apkm
+Root: HKCU; Subkey: "{#path_assoc_user}\.apkm\UserChoice"; ValueType: none; Flags: deletekey; Tasks: fileassoc_apkm
 
 [Files]
-Source: "{#releasedir}\*"; Excludes: "\*.lib,\*.exp,\{#tools_dir_name}"; DestDir: "{app}"; Flags: recursesubdirs
+Source: "{#releasedir}\*"; Excludes: "*.lib,*.exp,embedded-tools,embedded-tools\*,APKs,APKs\*"; DestDir: "{app}"; Flags: recursesubdirs
 Source: "{#toolsdir}\*"; DestDir: "{app}\{#tools_dir_name}"; Flags: recursesubdirs
 Source: ".\redist\VC_redist.x64.exe"; DestDir: {tmp}; Flags: dontcopy
 
@@ -72,6 +106,7 @@ Filename: "{tmp}\VC_redist.x64.exe"; StatusMsg: "Installing Visual C++ Redistrib
 
 [Icons]
 Name: "{group}\WSA PacMan"; Filename: "{app}\{#executable}"
+Name: "{autodesktop}\WSA PacMan"; Filename: "{app}\{#executable}"; Tasks: desktopicon
 
 [Code]
 function ShouldInstallVCRedist: Boolean;

@@ -27,6 +27,7 @@ dependencies:
   url_strategy: ^0.2.0
   yaml: ^3.1.2
   archive: ^3.6.1
+  path: ^1.9.0
   jovial_svg:
     git: https://github.com/alesimula/jovial_svg.git
   protobuf: ^3.1.0

@@ -1,6 +1,7 @@
-﻿// ignore_for_file: constant_identifier_names
+// ignore_for_file: constant_identifier_names
 
 import 'package:wsa_pacman/android/reader_apk.dart';
+import 'package:wsa_pacman/android/reader_bundle.dart';
 import 'package:wsa_pacman/android/reader_xapk.dart';
 import 'package:wsa_pacman/io/isolate_runner.dart';
 import 'package:wsa_pacman/utils/locale_utils.dart';
@@ -26,16 +27,25 @@ enum ResType {
   COLOR, POINTER, FILE
 }
 enum AppPackage {
-  NONE, APK, XAPK
+  NONE, APK, XAPK, APKS, APKM
 }
 
 extension AppPackageType on AppPackage {
   static AppPackage fromArguments(List<String> args) => args.isEmpty ? AppPackage.NONE : fromFilename(args.first);
-  static AppPackage fromFilename(String? name) => name == null || name.isEmpty ? AppPackage.NONE : 
-      name.endsWith(".xapk") ? AppPackage.XAPK : AppPackage.APK;
+  static AppPackage fromFilename(String? name) {
+    if (name == null || name.isEmpty) return AppPackage.NONE;
+    final lower = name.toLowerCase();
+    if (lower.endsWith(".xapk")) return AppPackage.XAPK;
+    if (lower.endsWith(".apks")) return AppPackage.APKS;
+    if (lower.endsWith(".apkm")) return AppPackage.APKM;
+    return AppPackage.APK;
+  }
+
   IsolateRef<String, APK_READER_FLAGS>? Function(String) get read { switch (this) {
     case AppPackage.APK: return ApkReader().start;
     case AppPackage.XAPK: return XapkReader().start;
+    case AppPackage.APKS: return BundleReader.startApks;
+    case AppPackage.APKM: return BundleReader.startApkm;
     case AppPackage.NONE: return (_)=>null;
   }}
   bool get directInstall => this == AppPackage.APK;
