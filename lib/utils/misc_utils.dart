@@ -1,4 +1,4 @@
-﻿// ignore_for_file: curly_braces_in_flow_control_structures
+// ignore_for_file: curly_braces_in_flow_control_structures
 
 import 'dart:async';
 import 'dart:io';
@@ -66,9 +66,13 @@ extension ArchiveUtils on Archive {
   }
 
   Future<bool> extractAll(Directory directory, {bool replaceExisting = false, FileDisposeQueue? disposeLock}) async => extractAllSync(directory, replaceExisting: replaceExisting, disposeLock: disposeLock);
-  bool extractAllSync(Directory directory, {bool replaceExisting = false, FileDisposeQueue? disposeLock }) {
+  bool extractAllSync(Directory directory, {bool replaceExisting = false, FileDisposeQueue? disposeLock}) {
     bool success = true;
-    Future.wait([for (final file in files) () async {if (file.extractSync(directory, replaceExisting: replaceExisting, disposeLock: disposeLock)) success = false;}()]);
+    for (final file in files) {
+      if (!file.extractSync(directory, replaceExisting: replaceExisting, disposeLock: disposeLock)) {
+        success = false;
+      }
+    }
     return success;
   }
 }
@@ -76,10 +80,14 @@ extension ArchiveUtils on Archive {
 extension ArchiveFileUtils on ArchiveFile {
   Future<bool> extract(Directory directory, {bool replaceExisting = false, FileDisposeQueue? disposeLock}) async => extractSync(directory, replaceExisting: replaceExisting, disposeLock: disposeLock);
   bool extractSync(Directory directory, {bool replaceExisting = false, FileDisposeQueue? disposeLock}) {
+    if (!isFile) return true;
     final file = File("${directory.absolute.path}\\$name");
     bool confirmExist = false;
     if (!replaceExisting && (confirmExist = file.existsSync())) return false;
-    if (!confirmExist) file..createSync(recursive: true)..writeAsBytesSync(content);
+    if (!confirmExist) {
+      file.createSync(recursive: true);
+      file.writeAsBytesSync(content as List<int>);
+    }
     disposeLock?.add(file);
     return true;
   }

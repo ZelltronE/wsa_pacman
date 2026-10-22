@@ -41,7 +41,7 @@ import 'theme.dart';
 const String appTitle = 'WSA Package Manager';
 const String appVersion = '1.5.0';
 
-late bool darkMode;
+bool darkMode = false;
 
 class WSAStatusAlert {
   WSAStatusAlert(this.type, this.severity, this.title, this.desc);

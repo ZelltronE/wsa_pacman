@@ -82,10 +82,10 @@ extension ADBUtils on Future<ProcessResult> {
   static Future<ProcessResult> command(String command, {String? param, String? workDir}) => _command([command, if (param != null) param], workDir: workDir);
   static Future<ProcessResult> commandWSA(String command, String? Function(String device) param, {String? workDir}) => ADBUtils.command(command, param: param(deviceName), workDir: workDir);
 
-  static Future<ProcessResult> _withDevice(String device, String command, {List<String>? args, String? workDir}) => _command(['-s', device, command, if (args != null) ...args], workDir: workDir);
-  static Future<ProcessResult> withDevice(String device, String command, {String? param, String? workDir}) => _command(['-s', device, command, if (param != null) param], workDir: workDir);
-  static Future<ProcessResult> withAddress(String ipAddress, int port, String command, {String? param, String? workDir}) => withDevice(_toName(ipAddress, port), command, param: param, workDir: workDir);
-  static Future<ProcessResult> withWSA(String command, {String? param, String? workDir}) => withDevice(deviceName, command, param: param, workDir: workDir);
+  static Future<ProcessResult> _withDevice(String device, String command, {List<String>? args, String? workDir, Duration timeout = const Duration(seconds: 8)}) => _command(['-s', device, command, if (args != null) ...args], workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> withDevice(String device, String command, {String? param, String? workDir, Duration timeout = const Duration(seconds: 8)}) => _command(['-s', device, command, if (param != null) param], workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> withAddress(String ipAddress, int port, String command, {String? param, String? workDir, Duration timeout = const Duration(seconds: 8)}) => withDevice(_toName(ipAddress, port), command, param: param, workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> withWSA(String command, {String? param, String? workDir, Duration timeout = const Duration(seconds: 8)}) => withDevice(deviceName, command, param: param, workDir: workDir, timeout: timeout);
 
   static Future<ProcessResult> devices() => command('devices');
 
@@ -101,17 +101,17 @@ extension ADBUtils on Future<ProcessResult> {
   static Future<ProcessResult> shellToAddress(String ipAddress, int port, String command) => shell(_toName(ipAddress, port), command);
   static Future<ProcessResult> shellToWSA(String command) => shell(deviceName, command);
 
-  static Future<ProcessResult> push(String device, String inPath, String outPath, {String? workDir}) => _withDevice(device, 'push', args: [inPath, outPath], workDir: workDir);
-  static Future<ProcessResult> pushToAddress(String ipAddress, int port, String inPath, String outPath, {String? workDir}) => push(_toName(ipAddress, port), inPath, outPath);
-  static Future<ProcessResult> pushToWSA(String inPath, String outPath, {String? workDir}) => push(deviceName, inPath, outPath);
+  static Future<ProcessResult> push(String device, String inPath, String outPath, {String? workDir, Duration timeout = const Duration(seconds: 30)}) => _withDevice(device, 'push', args: [inPath, outPath], workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> pushToAddress(String ipAddress, int port, String inPath, String outPath, {String? workDir, Duration timeout = const Duration(seconds: 30)}) => push(_toName(ipAddress, port), inPath, outPath, workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> pushToWSA(String inPath, String outPath, {String? workDir, Duration timeout = const Duration(seconds: 30)}) => push(deviceName, inPath, outPath, workDir: workDir, timeout: timeout);
 
-  static Future<ProcessResult> _installWithOptions(String device, String apk, {List<String>? options, String? workDir}) => _withDevice(device, 'install', args: [if (options != null) ...options, apk], workDir: workDir);
-  static Future<ProcessResult> install(String device, String apk, {bool downgrade = false, String? workDir}) => _installWithOptions(device, apk, options: [if (downgrade) '-r', if (downgrade) '-d'], workDir: workDir);
-  static Future<ProcessResult> installToAddress(String ipAddress, int port, String apk, {bool downgrade = false, String? workDir}) => install(_toName(ipAddress, port), apk, downgrade: downgrade, workDir: workDir);
-  static Future<ProcessResult> installToWSA(String apk, {bool downgrade = false, String? workDir}) => install(deviceName, apk, downgrade: downgrade, workDir: workDir);
+  static Future<ProcessResult> _installWithOptions(String device, String apk, {List<String>? options, String? workDir, Duration? timeout}) => _withDevice(device, 'install', args: [if (options != null) ...options, apk], workDir: workDir, timeout: timeout ?? const Duration(seconds: 90));
+  static Future<ProcessResult> install(String device, String apk, {bool downgrade = false, String? workDir, Duration? timeout}) => _installWithOptions(device, apk, options: ['-r', if (downgrade) '-d'], workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> installToAddress(String ipAddress, int port, String apk, {bool downgrade = false, String? workDir, Duration? timeout}) => install(_toName(ipAddress, port), apk, downgrade: downgrade, workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> installToWSA(String apk, {bool downgrade = false, String? workDir, Duration? timeout}) => install(deviceName, apk, downgrade: downgrade, workDir: workDir, timeout: timeout);
 
-  static Future<ProcessResult> _installMultipleWithOptions(String device, List<String> apkFiles, {List<String>? options, String? workDir}) => _withDevice(device, 'install-multiple', args: [if (options != null) ...options, ...apkFiles], workDir: workDir);
-  static Future<ProcessResult> installMultiple(String device, List<String> apkFiles, {bool downgrade = false, String? workDir}) => _installMultipleWithOptions(device, apkFiles, options: [if (downgrade) '-r', if (downgrade) '-d'], workDir: workDir);
-  static Future<ProcessResult> installMultipleToAddress(String ipAddress, int port, List<String> apkFiles, {bool downgrade = false, String? workDir}) => installMultiple(_toName(ipAddress, port), apkFiles, downgrade: downgrade, workDir: workDir);
-  static Future<ProcessResult> installMultipleToWSA(List<String> apkFiles, {bool downgrade = false, String? workDir}) => installMultiple(deviceName, apkFiles, downgrade: downgrade, workDir: workDir);
+  static Future<ProcessResult> _installMultipleWithOptions(String device, List<String> apkFiles, {List<String>? options, String? workDir, Duration? timeout}) => _withDevice(device, 'install-multiple', args: [if (options != null) ...options, ...apkFiles], workDir: workDir, timeout: timeout ?? const Duration(seconds: 90));
+  static Future<ProcessResult> installMultiple(String device, List<String> apkFiles, {bool downgrade = false, String? workDir, Duration? timeout}) => _installMultipleWithOptions(device, apkFiles, options: ['-r', if (downgrade) '-d'], workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> installMultipleToAddress(String ipAddress, int port, List<String> apkFiles, {bool downgrade = false, String? workDir, Duration? timeout}) => installMultiple(_toName(ipAddress, port), apkFiles, downgrade: downgrade, workDir: workDir, timeout: timeout);
+  static Future<ProcessResult> installMultipleToWSA(List<String> apkFiles, {bool downgrade = false, String? workDir, Duration? timeout}) => installMultiple(deviceName, apkFiles, downgrade: downgrade, workDir: workDir, timeout: timeout);
 }

@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:wsa_pacman/android/adb_install_error.dart';
 import 'package:wsa_pacman/android/android_utils.dart';
 import 'package:wsa_pacman/android/permissions.dart';
 import 'package:wsa_pacman/android/reader_apk.dart';
@@ -35,29 +36,37 @@ class ApkInstaller extends StatefulWidget {
   }
 
   static void installApk(String apkFile, String ipAddress, int port, AppLocalizations lang, int timeout, [bool downgrade = false]) async {
-    log("INSTALLING \"$apkFile\" on on $ipAddress:$port...");
-    var installation = ADBUtils.installToAddress(ipAddress, port, apkFile, downgrade: downgrade);
-    if (timeout > 0) installation = installation.processTimeout(Duration(seconds: timeout));
-    installation = installation.defaultError();
+    log("INSTALLING \"$apkFile\" on $ipAddress:$port...");
     GState.apkInstallState.update((_) => InstallState.INSTALLING);
+
+    // Fast check / reconnect to ensure ADB is connected to WSA
+    try {
+      final conn = await ADBUtils.connectAddress(ipAddress, port).timeout(const Duration(seconds: 3));
+      log("Pre-install ADB connect result: exitCode=${conn.exitCode}, stdout=${conn.stdout}");
+    } catch (e) {
+      log("Pre-install connect check: $e");
+    }
+
+    final effectiveTimeout = Duration(seconds: timeout > 0 ? timeout : 90);
+    var installation = ADBUtils.installToAddress(ipAddress, port, apkFile, downgrade: downgrade, timeout: effectiveTimeout);
+    installation = installation.defaultError();
+
     var result = await installation;
     log("EXIT CODE: ${result.exitCode}");
-    String error = result.stderr.toString();
     log("OUTPUT: ${result.stdout}");
-    log("ERROR: ${error}");
-    if (result.exitCode == 0) GState.apkInstallState.update((_) => InstallState.SUCCESS);
-    else if (result.isTimeout) {
+    log("ERROR: ${result.stderr}");
+
+    if (result.exitCode == 0) {
+      GState.apkInstallState.update((_) => InstallState.SUCCESS);
+    } else if (result.isTimeout) {
       GState.apkInstallState.update((_) => InstallState.TIMEOUT);
       GState.errorCode.update((_) => "TIMEOUT");
       GState.errorDesc.update((_) => lang.installer_error_timeout);
     } else {
       GState.apkInstallState.update((_) => InstallState.ERROR);
-      //TODO add cause
-      RegExpMatch? errorMatch = RegExp(r'(^|\n)\s*adb:\s+failed\s+to\s+install\s+.*:\s+Failure\s+\[([^:]*):\s*([^\s].*[^\s])\s*\]').firstMatch(error);
-      String errorCode = errorMatch?.group(2) ?? "";
-      GState.errorCode.update((_) => errorCode.isNotEmpty ? errorCode : "UNKNOWN_ERROR");
-      String errorDesc = errorMatch?.group(3) ?? "";
-      GState.errorDesc.update((_) => errorDesc.isNotEmpty ? errorDesc : lang.installer_error_nomsg);
+      final error = AdbInstallError.parse(result.stdout?.toString() ?? '', result.stderr?.toString() ?? '', lang);
+      GState.errorCode.update((_) => error.code);
+      GState.errorDesc.update((_) => error.description);
     }
   }
 
@@ -103,6 +112,15 @@ class _ApkInstallerState extends State<ApkInstaller> {
     final installTimeout = GState.installTimeout.$;
     final installType = GState.apkInstallType.$;
     final isDowngrade = installType == InstallType.DOWNGRADE;
+
+    if (!GState.connectionStatus.$.isConnected) {
+      setState(() {
+        startingWSA = true;
+        pendingInstall = true;
+      });
+      WSAUtils.launch();
+      return;
+    }
 
     if (Constants.packageType.directInstall) {
       ApkInstaller.installApk(Constants.packageFile, ipAddress, port, lang, installTimeout, isDowngrade);
@@ -286,7 +304,14 @@ class _ApkInstallerState extends State<ApkInstaller> {
               noMoveWindow(Button(
                 child: Text(lang.installer_btn_dismiss),
                 onPressed: (){appWindow.close();},
-              ))
+              )),
+              const SizedBox(width: 15),
+              noMoveWindow(FilledButton(
+                child: Text(lang.installer_btn_install),
+                onPressed: () {
+                  GState.apkInstallState.update((_) => InstallState.PROMPT);
+                },
+              )),
             ]
           )
         ];

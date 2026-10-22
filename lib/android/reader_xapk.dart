@@ -8,6 +8,7 @@ import 'package:archive/archive_io.dart';
 import 'package:collection/collection.dart';
 
 import 'package:flutter/cupertino.dart';
+import 'package:wsa_pacman/android/adb_install_error.dart';
 import 'package:wsa_pacman/android/android_utils.dart';
 import 'package:wsa_pacman/android/permissions.dart';
 import 'package:wsa_pacman/android/reader_apk.dart';
@@ -41,7 +42,19 @@ extension Architectures on Architecture {
 class XapkReader extends IsolateRunner<String, APK_READER_FLAGS> {
   static int _versionCode = 0;
   static late Future<Archive> _xapkArchive;
-  static late final Directory _xapkTempDir = Directory(WinPath.tempSubdir).createTempSync("XAPK-Extracted@$pid@");
+  static Directory? _xapkTempDir;
+
+  static Directory _getOrCreateTempDir() {
+    if (_xapkTempDir != null && _xapkTempDir!.existsSync()) {
+      return _xapkTempDir!;
+    }
+    final baseDir = Directory(WinPath.tempSubdir);
+    if (!baseDir.existsSync()) {
+      baseDir.createSync(recursive: true);
+    }
+    _xapkTempDir = baseDir.createTempSync("XAPK-Extracted@${pid}_${DateTime.now().millisecondsSinceEpoch}@");
+    return _xapkTempDir!;
+  }
 
   Future<Archive> _initArchiveFile(File file) async => ZipDecoder().decodeBuffer(InputFileStream(file.path));
   void _initArchive() {
@@ -67,34 +80,51 @@ class XapkReader extends IsolateRunner<String, APK_READER_FLAGS> {
   }());
 
   static void installXApk(String workingDir /* tempDir */, List<String> apkFiles, List<ManifestXapk_ApkExpansion> expansions, String ipAddress, int port, AppLocalizations lang, int timeout, FileDisposeQueue disposeLock, [bool downgrade = false]) async {
-    if (apkFiles.isNotEmpty) log("INSTALLING \"${apkFiles.first}\" on on $ipAddress:$port...");
+    if (apkFiles.isNotEmpty) log("INSTALLING \"${apkFiles.first}\" on $ipAddress:$port...");
     disposeLock.clear();
-    var installation = ADBUtils.installMultipleToAddress(ipAddress, port, apkFiles, downgrade: downgrade, workDir: workingDir);
-    if (timeout > 0) installation = installation.processTimeout(Duration(seconds: timeout));
-    final resources = copyApkResources(expansions, workingDir, ipAddress, port);
     GState.apkInstallState.update((_) => InstallState.INSTALLING);
 
-    final result = await installation;
-    await resources;
+    // Fast check / reconnect to ensure ADB is connected to WSA
+    try {
+      final conn = await ADBUtils.connectAddress(ipAddress, port).timeout(const Duration(seconds: 3));
+      log("Pre-install ADB connect result: exitCode=${conn.exitCode}, stdout=${conn.stdout}");
+    } catch (e) {
+      log("Pre-install connect check: $e");
+    }
 
-    if (!result.isTimeout) Directory(workingDir).deleteSync(recursive: true);
+    final effectiveTimeout = Duration(seconds: timeout > 0 ? timeout : 90);
+    var installation = ADBUtils.installMultipleToAddress(ipAddress, port, apkFiles, downgrade: downgrade, workDir: workingDir, timeout: effectiveTimeout);
+    final resources = copyApkResources(expansions, workingDir, ipAddress, port);
+
+    final result = await installation;
+    try {
+      await resources;
+    } catch (e) {
+      log("Error copying resources: $e");
+    }
+
     log("EXIT CODE: ${result.exitCode}");
-    String error = result.stderr.toString();
     log("OUTPUT: ${result.stdout}");
-    log("ERROR: $error");
-    if (result.exitCode == 0) GState.apkInstallState.update((_) => InstallState.SUCCESS);
-    else if (result.isTimeout) {
+    log("ERROR: ${result.stderr}");
+
+    if (result.exitCode == 0) {
+      try {
+        if (Directory(workingDir).existsSync()) {
+          Directory(workingDir).deleteSync(recursive: true);
+        }
+      } catch (e) {
+        log("Notice: Could not delete temp extraction dir: $e");
+      }
+      GState.apkInstallState.update((_) => InstallState.SUCCESS);
+    } else if (result.isTimeout) {
       GState.apkInstallState.update((_) => InstallState.TIMEOUT);
       GState.errorCode.update((_) => "TIMEOUT");
       GState.errorDesc.update((_) => '${lang.installer_error_timeout}\n\n${lang.installer_warning_dirty(workingDir)}');
     } else {
       GState.apkInstallState.update((_) => InstallState.ERROR);
-      //TODO add cause
-      RegExpMatch? errorMatch = RegExp(r'(^|\n)\s*adb:\s+failed\s+to\s+install\s+.*:\s+Failure\s+\[([^:]*):\s*([^\s].*[^\s])\s*\]').firstMatch(error);
-      String errorCode = errorMatch?.group(2) ?? "";
-      GState.errorCode.update((_) => errorCode.isNotEmpty ? errorCode : "UNKNOWN_ERROR");
-      String errorDesc = errorMatch?.group(3) ?? "";
-      GState.errorDesc.update((_) => errorDesc.isNotEmpty ? errorDesc : lang.installer_error_nomsg);
+      final error = AdbInstallError.parse(result.stdout?.toString() ?? '', result.stderr?.toString() ?? '', lang);
+      GState.errorCode.update((_) => error.code);
+      GState.errorDesc.update((_) => error.description);
     }
   }
 
@@ -168,18 +198,23 @@ class XapkReader extends IsolateRunner<String, APK_READER_FLAGS> {
     final image = icon != null ? Image.memory(icon.content) : null;
     updateIcon(image);
 
+    final tempDir = _getOrCreateTempDir();
     final apkList = _getApkList(manifest);
-    String installDir = _xapkTempDir.absolute.path;
+    String installDir = tempDir.absolute.path;
     final disposeLock = FileDisposeQueue();
     
     await waitFlag(APK_READER_FLAGS.UI_LOADED);
-    archive.extractAllSync(_xapkTempDir, disposeLock: disposeLock);
+    archive.extractAllSync(tempDir, disposeLock: disposeLock);
     updateInstallInfo(manifest, installDir, apkList, disposeLock);
 
-    log("DIRECTORY: ${_xapkTempDir.path}");
-  } catch (e) {
-    _xapkTempDir.deleteSync(recursive: true);
-    //(await _xapkArchive).clear();
+    log("DIRECTORY: ${tempDir.path}");
+  } catch (e, st) {
+    log("Error in XapkReader.run: $e\n$st");
+    if (_xapkTempDir != null && _xapkTempDir!.existsSync()) {
+      try {
+        _xapkTempDir!.deleteSync(recursive: true);
+      } catch (_) {}
+    }
   }}
 
   @override
